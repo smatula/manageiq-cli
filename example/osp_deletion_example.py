@@ -18,17 +18,18 @@ from miqcli import Client
 from time import sleep
 
 # The input to deletion is the name of the vm and provider name
-# INPUT = "<vm_name_to_delete>"
-# INPUT_VM_NAME = "sjm_aws_miq_test_machine_1"
-INPUT_VM_NAME = "sjm_aws_miq_test_machine_1"
-INPUT_PROVIDER_NAME = "AWS - Pit"
-# INPUT_NETWORK =  "vpc-56944a3e"
-# INPUT_TENANT = ""
-# INPUT_SUBNET = "subnet-9753f7ff"
-# INPUT_PROVIDER_NAME = None
+# INPUT_VM_NAME = "<vm_name_to_delete>"
+# INPUT_PROVIDER_NAME = "<name_of_provider>"
+# INPUT_NETWORK = "<name_of_cloud_network>"
+# INPUT_TENANT = "<name_of_cloud_tenant>"
+# INPUT_SUBNET = "<name_of_cloud_subnet>"
+
+INPUT_VM_NAME = None
+INPUT_PROVIDER_NAME = None
 INPUT_NETWORK = None
 INPUT_TENANT = None
 INPUT_SUBNET = None
+
 
 # create a client object
 # pass in config, if empty {} means it will use the default credentials
@@ -83,14 +84,26 @@ if fip_id and instances["vendor"] == "openstack":
     print(req_id)
 
     # 3. the script will keep querying automate_request for the status to be
-    #  finished, once finished, it will query for the floating ip id. If there
-    #  was an error, the script will display the error message and exit.
+    #  active, once active, it will query the spawned request task.
     done = False
     while not done:
         result = client.collection.status(req_id)
-        if result.request_state == "finished":
+        if result.request_state == "active":
             done = True
         sleep(5)
+
+    # Query the request task
+    client.collection = "request_tasks"
+    done = False
+    while not done:
+        result = client.collection.status(req_id)
+        if result.state == "finished":
+            done = True
+        sleep(5)
+
+    # Task is complete, go back to the automation request to get the output
+    client.collection = "automation_requests"
+    result = client.collection.status(req_id)
 
     # see the return and options of the automate request
     print("Options from the automate request: {0}".format(result.options))
@@ -103,6 +116,7 @@ if fip_id and instances["vendor"] == "openstack":
         return_dict = ast.literal_eval(return_data)
         if return_dict["status"] != 202:
             print("Error deleting floating ip: %s" % return_dict)
+            raise SystemExit(1)
     else:
         # unexpected error, maybe Automate Datastore not imported?
         print("Unexpected Error when deleting floating ip")
@@ -112,11 +126,10 @@ if fip_id and instances["vendor"] == "openstack":
 client.collection = "instances"
 id = instances['id']
 task_id = client.collection.terminate(inst_name=id,
-                                      provider=None,
                                       by_id=True)
 print("Task ID of the deleted instance: {0}".format(task_id))
 
-# 5. check that task is successful
+# 5. check the deletion task, and wait for it to be finished
 client.collection = "tasks"
 done = False
 while not done:
@@ -128,14 +141,11 @@ while not done:
 if result.status == "Error":
     print("Deleting the instance: {0} failed: {1}".format(INPUT_VM_NAME,
                                                           result.message))
-
     raise SystemExit(1)
-
 
 # 6. remove the vm reference in MIQ/Cloudforms, if deletion is successful
 client.collection = "vms"
 task_id = client.collection.delete(vm_name=id,
-                                   provider=None,
                                    by_id=True)
 print("Task ID for the attempt to delete vm: {0}".format(task_id))
 

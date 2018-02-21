@@ -31,7 +31,7 @@ class Collections(CollectionsMixin):
                   help='inst_name given as ID of instance" '
                        'all other options except --attr are ignored')
     @click.option('--attr', type=str, default='',
-                  help='attribute of an instance(s)')
+                  help='attribute of an instance(s)', multiple=True)
     @click.option('--provider', type=str, default='',
                   help='provider of an instance(s)')
     @click.option('--network', type=str, default='',
@@ -68,7 +68,7 @@ class Collections(CollectionsMixin):
         :param itype: type of instance - "Openstack" or "Amazon"
         :type itype: str
         :param attr: attribute
-        :type attr: str
+        :type attr: tuple
         :param by_id: name is instance id
         :type by_id: bool
         :return: instance object or list of instance objects
@@ -183,8 +183,6 @@ class Collections(CollectionsMixin):
     @click.option('--by_id', type=bool, default=False,
                   help='inst_name given as ID of instance" '
                        'all other options except --attr are ignored')
-    @click.option('--attr', type=str, default='',
-                  help='attribute of an instance(s)')
     @click.option('--provider', type=str, default='',
                   help='provider of an instance(s)')
     @click.option('--network', type=str, default='',
@@ -202,6 +200,8 @@ class Collections(CollectionsMixin):
     def terminate(self, inst_name, provider=None, network=None, tenant=None,
                   subnet=None, vendor=None, itype=None, by_id=False):
         """Terminate instance.
+
+        ::
 
         :param inst_name: name of the instance
         :type inst_name: str
