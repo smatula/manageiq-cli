@@ -53,7 +53,8 @@ try:
                                         network=INPUT_NETWORK,
                                         tenant=INPUT_TENANT,
                                         subnet=INPUT_SUBNET,
-                                        attr=("floating_ip",))
+                                        attr=("floating_ip",
+                                              "ext_management_system"))
     if instances and type(instances) is list:
         print("Multiple instances found.")
         print("Supply more options to narrow")
@@ -161,6 +162,26 @@ while not done:
 if result.status == "Error":
     print("Deleting the VM reference: {0} failed: "
           "{1}".format(INPUT_VM_NAME, result.message))
+    raise SystemExit(1)
+
+# 8. Refresh Provider to update DB
+client.collection = "providers"
+provider_id = instances['ext_management_system']['id']
+task_id = client.collection.refresh(prov_id=provider_id)
+
+# 9. check the task and make sure the provider is refreshed successfully
+client.collection = "tasks"
+done = False
+while not done:
+    result = client.collection.status(task_id)
+    if result.state == "Finished":
+        done = True
+    sleep(5)
+
+if result.status == "Error":
+    print("Refresh of Provider: {0} failed: "
+          "{1}".format(instances['ext_management_system']['name'],
+                       result.message))
     raise SystemExit(1)
 
 print("Deletion successfully completed")

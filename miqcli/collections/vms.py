@@ -30,23 +30,17 @@ class Collections(CollectionsMixin):
     @click.option('--by_id', type=bool, default=False,
                   help='name given as ID of vm')
     @click.option('--attr', type=str, default='',
-                  help='attribute of a vm(s)')
+                  help='attribute of a vm(s)', multiple=True)
     @click.option('--provider', type=str, default='',
                   help='provider of an vm(s)')
-    @click.option('--network', type=str, default='',
-                  help='cloud network of an vm(s)')
-    @click.option('--tenant', type=str, default='',
-                  help='cloud tenant of an vm(s)')
-    @click.option('--subnet', type=str, default='',
-                  help='cloud subnet of an vm(s)')
     @click.option('--vendor', type=str, default='',
                   help='vendor of an vm(s)')
     @click.option('--vtype', type=str, default='',
                   help='type of an vm(s) - ex. "Openstack", "Amazon"...')
     @click.argument('vm_name', metavar="VM_NAME", type=str, default='')
     @client_api
-    def query(self, vm_name, provider=None, network=None, tenant=None,
-              subnet=None, vendor=None, vtype=None, attr=None, by_id=False):
+    def query(self, vm_name, provider=None, vendor=None,
+              vtype=None, attr=None, by_id=False):
         """Query vms.
 
         ::
@@ -56,18 +50,12 @@ class Collections(CollectionsMixin):
         :type vm_name: str
         :param provider: name of provider
         :type provider: str
-        :param network: name of cloud network
-        :type network: str
-        :param tenant: name of cloud tentant
-        :type tenant: str
-        :param subnet: name of cloud sub network
-        :type subnet: str
         :param vendor: name of vendor
         :type vendor: str
         :param vtype: type of vm - "Openstack" or "Amazon"
         :type vtype: str
         :param attr: attribute
-        :type attr: str
+        :type attr: tuple
         :param by_id: name is vm id
         :type by_id: bool
         :return: vm object or list of vm objects
@@ -80,7 +68,10 @@ class Collections(CollectionsMixin):
             if vm_name:
                 # query based on vm name as ID
                 # all other options ignored except attr
-                vms = self.collection.__call__(vm_name, attr)
+
+                qs_by_id = ("id", "=", vm_name)
+                query = BasicQuery(self.collection)
+                vms = query(qs_by_id, attr)
 
                 if len(vms) < 1:
                     log.abort(
@@ -100,12 +91,6 @@ class Collections(CollectionsMixin):
                 qstr.append(("name", "=", vm_name))
             if provider:
                 qstr.append(("ext_management_system.name", "=", provider))
-            if network:
-                qstr.append(("cloud_networks.name", "=", network))
-            if tenant:
-                qstr.append(("cloud_tenant.name", "=", tenant))
-            if subnet:
-                qstr.append(("cloud_subnets.name", "=", subnet))
             if vendor:
                 qstr.append(("vendor", "=", vendor.lower()))
             if vtype:
@@ -129,9 +114,6 @@ class Collections(CollectionsMixin):
                 if len(vms) < 1:
                     log.abort('No Vm(s) found for given parameters')
 
-                if len(vms) == 1:
-                    vms = vms[0]
-
             # general query on all vms
             else:
 
@@ -148,33 +130,22 @@ class Collections(CollectionsMixin):
             log.info('Vm Info'.center(50))
             log.info('-' * 50)
 
-            if type(vms) is list:
-                for e in vms:
-                    log.info(' * ID: %s' % e['id'])
-                    log.info(' * NAME: %s' % e['name'])
-
-                    if attr:
-                        for a in attr:
-                            try:
-                                log.info(' * %s: %s' % (a.upper(), e[a]))
-                            except AttributeError:
-                                log.info(' * %s: ' % a.upper())
-                    log.info('-' * 50)
-
-            else:
-                log.info(' * ID: %s' % vms['id'])
-                log.info(' * NAME: %s' % vms['name'])
+            for e in vms:
+                log.info(' * ID: %s' % e['id'])
+                log.info(' * NAME: %s' % e['name'])
 
                 if attr:
                     for a in attr:
                         try:
-                            log.info(' * %s: %s' % (a.upper(), vms[a]))
+                            log.info(' * %s: %s' % (a.upper(), e[a]))
                         except AttributeError:
                             log.info(' * %s: ' % a.upper())
-
                 log.info('-' * 50)
 
-            return vms
+            if len(vms) == 1:
+                return vms[0]
+            else:
+                return vms
         else:
             log.abort('No vm(s) found for given parameters')
 
@@ -272,22 +243,14 @@ class Collections(CollectionsMixin):
                   help='name given as ID of vm')
     @click.option('--provider', type=str, default='',
                   help='provider of a vm(s)')
-    @click.option('--provider', type=str, default='',
-                  help='provider of an instance(s)')
-    @click.option('--network', type=str, default='',
-                  help='cloud network of an instance(s)')
-    @click.option('--tenant', type=str, default='',
-                  help='cloud tenant of an instance(s)')
-    @click.option('--subnet', type=str, default='',
-                  help='cloud subnet of an instance(s)')
     @click.option('--vendor', type=str, default='',
-                  help='vendor of an instance(s)')
+                  help='vendor of an vm(s)')
     @click.option('--vtype', type=str, default='',
-                  help='type of an instance(s) - ex. "Openstack", "Amazon"...')
+                  help='type of an vm(s) - ex. "Openstack", "Amazon"...')
     @click.argument('vm_name', metavar='VM_NAME', type=str, default='')
     @client_api
-    def delete(self, vm_name, provider=None, network=None, tenant=None,
-               subnet=None, vendor=None, vtype=None, by_id=False):
+    def delete(self, vm_name, provider=None, vendor=None,
+               vtype=None, by_id=False):
         """Delete.
 
         ::
@@ -295,12 +258,6 @@ class Collections(CollectionsMixin):
         :type vm_name: str
         :param provider: name of the provider
         :type provider: str
-         :param network: name of cloud network
-        :type network: str
-        :param tenant: name of cloud tenant
-        :type tenant: str
-        :param subnet: name of cloud sub network
-        :type subnet: str
         :param vendor: name of vendor
         :type vendor: str
         :param itype: type of vm - "Openstack" or "Amazon"
@@ -311,14 +268,11 @@ class Collections(CollectionsMixin):
         :rtype: int
         """
         if vm_name:
-            if by_id:
-                vm = self.collection.__call__(vm_name)
-            else:
-                vm = self.query(vm_name, provider, network, tenant,
-                                subnet, vendor, vtype)
-                if vm and type(vm) is list:
-                    log.abort("Multiple vms found."
-                              "Supply more options to narrow.")
+            vm = self.query(vm_name, provider, vendor,
+                            vtype, by_id=by_id)
+            if vm and type(vm) is list:
+                log.abort("Multiple vms found."
+                          "Supply more options to narrow.")
             try:
                 result = vm.action.delete()
                 log.info("Task to delete {0} created: {1}".format(

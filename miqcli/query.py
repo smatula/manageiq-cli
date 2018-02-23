@@ -106,13 +106,12 @@ class BasicQuery(BaseQuery):
                 Q(query[0], query[1], query[2])
             )
 
-            if attr:
-                entities = [
-                    self.collection.__call__(
-                        r['id'], attributes=attr) for r in resources.resources]
-                resources.resources = entities
-
             self.resources = resources.resources
+
+            if attr:
+                for ent in resources.resources:
+                    ent.reload(True, True, attr)
+
         except (APIException, ValueError) as e:
             log.error('Query attempted failed: {0}, error: {1}'.format(
                 query, e))
@@ -174,13 +173,12 @@ class AdvancedQuery(BaseQuery):
         try:
             resources = getattr(self.collection, 'filter')(eval(adv_query))
 
-            if attr:
-                entities = [
-                    self.collection.__call__(
-                        r['id'], attributes=attr) for r in resources.resources]
-                resources.resources = entities
-
             self.resources = resources.resources
+
+            if attr:
+                for ent in resources.resources:
+                    ent.reload(True, True, attr)
+
         except (APIException, ValueError, TypeError) as e:
             # most likely user passed an invalid attribute name
             log.error('Query attempted failed: {0}, error: {1}'.format(

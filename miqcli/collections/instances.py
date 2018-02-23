@@ -82,7 +82,10 @@ class Collections(CollectionsMixin):
             if inst_name:
                 # query based on instance name as ID
                 # all other options ignored except attr
-                instances = self.collection.__call__(inst_name, attr)
+
+                qs_by_id = ("id", "=", inst_name)
+                query = BasicQuery(self.collection)
+                instances = query(qs_by_id, attr)
 
                 if len(instances) < 1:
                     log.abort(
@@ -131,9 +134,6 @@ class Collections(CollectionsMixin):
                 if len(instances) < 1:
                     log.abort('No instance(s) found for given parameters')
 
-                elif len(instances) == 1:
-                    instances = instances[0]
-
             # general query on all instances
             else:
 
@@ -150,39 +150,28 @@ class Collections(CollectionsMixin):
             log.info('Instance Info'.center(50))
             log.info('-' * 50)
 
-            if type(instances) is list:
-                for e in instances:
-                    log.info(' * ID: %s' % e['id'])
-                    log.info(' * NAME: %s' % e['name'])
-
-                    if attr:
-                        for a in attr:
-                            try:
-                                log.info(' * %s: %s' % (a.upper(), e[a]))
-                            except AttributeError:
-                                log.info(' * %s: ' % a.upper())
-                    log.info('-' * 50)
-
-            else:
-                log.info(' * ID: %s' % instances['id'])
-                log.info(' * NAME: %s' % instances['name'])
+            for e in instances:
+                log.info(' * ID: %s' % e['id'])
+                log.info(' * NAME: %s' % e['name'])
 
                 if attr:
                     for a in attr:
                         try:
-                            log.info(' * %s: %s' % (a.upper(), instances[a]))
+                            log.info(' * %s: %s' % (a.upper(), e[a]))
                         except AttributeError:
                             log.info(' * %s: ' % a.upper())
-
                 log.info('-' * 50)
 
-            return instances
+            if len(instances) == 1:
+                return instances[0]
+            else:
+                return instances
         else:
             log.abort('No instance(s) found for given parameters')
 
     @click.option('--by_id', type=bool, default=False,
-                  help='inst_name given as ID of instance" '
-                       'all other options except --attr are ignored')
+                  help='inst_name given as ID of instance '
+                       'all other options are ignored')
     @click.option('--provider', type=str, default='',
                   help='provider of an instance(s)')
     @click.option('--network', type=str, default='',
@@ -223,14 +212,11 @@ class Collections(CollectionsMixin):
         :rtype: int
         """
         if inst_name:
-            if by_id:
-                instance = self.collection.__call__(inst_name)
-            else:
-                instance = self.query(inst_name, provider, network, tenant,
-                                      subnet, vendor, itype)
-                if instance and type(instance) is list:
-                    log.abort("Multiple instances found."
-                              "Supply more options to narrow.")
+            instance = self.query(inst_name, provider, network, tenant,
+                                  subnet, vendor, itype, by_id=by_id)
+            if instance and type(instance) is list:
+                log.abort("Multiple instances found."
+                          "Supply more options to narrow.")
             try:
                 result = instance.action.terminate()
                 log.info("Task to terminate {0} created: {1}".format(
