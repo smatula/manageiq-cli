@@ -63,8 +63,6 @@ begin
       count = Integer($evm.object['count'])
   end
 
-  raise 'count must be positive integer' if count.positive?
-
   floating_network = $evm.vmdb(:cloud_network).find_by_id($evm.object['cloud_network_id']).name
   log(:info, "Floating Network Name: #{floating_network}")
 
