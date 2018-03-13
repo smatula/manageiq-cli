@@ -90,16 +90,22 @@ begin
 
   log(:info, "Allocating IP/IPs from #{pool_name}")
 
+  addresses = []
   while (count > 0)
       address = conn.allocate_address(pool_name).body
       log(:info, "Allocated #{address['floating_ip'].inspect}")
 
-      ext_management_system.refresh
+      addresses << address
+      count = count - 1
+  end
 
-      # Set timer 10 min. (600 seconds)
-      timer = 600
-      new_ip = nil
+  ext_management_system.refresh
 
+  # Set timer 10 min. (600 seconds)
+  timer = 600
+  new_ip = nil
+
+  for address in addresses
       while (timer > 0)
           # Get Floating IP data
           new_ips = $evm.vmdb(:floating_ip).where(["cloud_network_id = ? and
@@ -132,7 +138,6 @@ begin
 
       log(:info, "ip #{ip_list}")
 
-      count = count - 1
   end
   
   # For automation_task set return data. status and return data
