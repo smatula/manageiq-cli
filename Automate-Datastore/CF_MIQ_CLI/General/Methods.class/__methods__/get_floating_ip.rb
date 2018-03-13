@@ -5,6 +5,7 @@
 # Input:
 # cloud_tenant_id (integer) required = Cloud tenant id
 # cloud network_id (integer) required = Cloud network id
+# count (integer) optional = Number of Floating IPs requesting
 # 
 # Returned list of ips and ids
 
@@ -59,7 +60,7 @@ begin
   if ($evm.object['count'].nil? or $evm.object['count'].blank?)
       count = 1
   else
-      count = $evm.object['count']
+      count = Integer($evm.object['count'])
   end
 
   floating_network = $evm.vmdb(:cloud_network).find_by_id($evm.object['cloud_network_id']).name
