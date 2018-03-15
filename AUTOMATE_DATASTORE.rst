@@ -25,8 +25,9 @@ Method Inputs
 
 Method                Inputs            Type     Required
 ________________________________________________________________________________
-add_floating_ip       cloud_tenant_id   Integer  Yes
+get_floating_ip       cloud_tenant_id   Integer  Yes
                       cloud_network_id  Integer  Yes
+                      count             Integer  No
 allocate_floating_ip  vm_name           String   Yes if vm_id not given
                       vm_id             Integer  Yes if vm_name not given
                       floating_network  String   No
