@@ -14,8 +14,8 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from miqcli.collections import Collection
+from miqcli.collections import CollectionsMixin
 
 
-class Collections(Collection):
+class Collections(CollectionsMixin):
     """Configuration script payloads collections."""

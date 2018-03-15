@@ -14,12 +14,14 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from miqcli.collections import Collection
+from miqcli.collections import CollectionsMixin
+from miqcli.decorators import client_api
 
 
-class Collections(Collection):
+class Collections(CollectionsMixin):
     """Reports collections."""
 
+    @client_api
     def imports(self):
         """Import."""
         # NOTE: real action name is import but import is python built-in..

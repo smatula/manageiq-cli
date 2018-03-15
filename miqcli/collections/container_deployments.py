@@ -14,16 +14,19 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from miqcli.collections import Collection
+from miqcli.collections import CollectionsMixin
+from miqcli.decorators import client_api
 
 
-class Collections(Collection):
+class Collections(CollectionsMixin):
     """Container deployments collections."""
 
+    @client_api
     def query(self):
         """Query."""
         raise NotImplementedError
 
+    @client_api
     def create(self):
         """Create."""
         raise NotImplementedError

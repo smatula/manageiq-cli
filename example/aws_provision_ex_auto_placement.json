@@ -1,0 +1,10 @@
+{
+    "email": "<email_address>",
+    "image": "<image_name>",
+    "flavor": "<instance_type>",
+    "key_pair": "<key_pair>",
+    "vm_name": "<instance_name>",
+    "provider": "<provider_name>",
+    "auto_placement": "true"
+}
+

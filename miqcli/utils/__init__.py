@@ -14,96 +14,100 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from importlib import import_module
+
+import click
 import os
 import yaml
 import ast
-import errno
+import json
 from types import FunctionType
 
+from miqcli.constants import CFG_FILE_EXT, COLLECTIONS_PACKAGE
 from miqcli.utils import log
 
-__all__ = ['Config', 'get_class_methods']
+__all__ = ['Config', 'get_class_methods', 'get_client_api_pointer',
+           'is_default_config_used', 'display_commands',
+           '_abort_invalid_commands', 'get_collection_class',
+           'get_input_data']
 
 
 class Config(dict):
-    """
-    Config class
+    """Configuration class."""
 
-    :param dict: dictionary of configuration values
-    :type dict: dictionary
-    """
+    def __init__(self, settings=None, verbose=False):
+        """Constructor.
 
-    def __init__(self, defaults=None):
+        :param settings: configuration settings
+        :type settings: dict
+        :param verbose: verbosity mode
+        :type verbose: bool
         """
-        initialize the class
-        :param defaults: initial dictionary of value
-        :type defaults: dictionary
-        """
-        dict.__init__(self, defaults or {})
+        super(Config, self).__init__(settings or {})
+        self._verbose = verbose
 
-    def from_yaml(self, filename, silent=False):
-        """
-        import the config data from a yaml file
-        :param filename: file path to config
-        :type: filename: str of a file path
-        :param silent: silent errors or not
-        :type silent: Boolean
-        :return:
-        """
-        # check for *.yml or *.yaml extension
-        if filename:
-            split_filename = os.path.splitext(filename)
-            if os.path.isfile(split_filename[0] + ".yaml"):
-                filename = split_filename[0] + ".yaml"
-            elif os.path.isfile(split_filename[0] + ".yml"):
-                filename = split_filename[0] + ".yml"
-            else:
-                if silent:
-                    return False
-                log.error('Configuration file: {0} does not exist.'.
-                          format(filename), abort=True)
-        else:
-            if silent:
-                return False
-            log.error('Please pass a valid configuration file to load.',
-                      abort=True)
+    def from_yml(self, directory, filename):
+        """Load configuration settings from yml file.
 
+        :param directory: directory to scan for config file
+        :type directory: str
+        :param filename: config filename
+        :type filename: str
+        """
+        _cfg_file = None
+
+        # verify directory is defined
+        if not os.path.isdir(directory):
+            if self._verbose:
+                log.warning('Directory {0} is undefined.'.format(directory))
+            return
+
+        # verify config file exists
+        for entry in os.listdir(directory):
+            _file = os.path.splitext(entry)
+            if _file[0] == filename and _file[1] in CFG_FILE_EXT:
+                _cfg_file = os.path.join(directory, entry)
+                break
+
+        if _cfg_file is None and self._verbose:
+            log.warning('Config file at {0} is undefined.'.format(directory))
+            return
+        if _cfg_file is None:
+            return
+
+        # load config
         try:
-            with open(filename, mode='rb') as fp:
+            with open(_cfg_file, mode='rb') as fp:
                 config_data = yaml.load(fp)
-                for key in config_data:
-                    self[key] = config_data[key]
-        except yaml.YAMLError as e:
-            if silent:
-                return False
-            log.debug('Standard error: {0}'.format(e.sterror))
-            log.error('A problem occurred while loading configuration '
-                      'file.', abort=True)
-        except IOError as e:
-            if silent and e.errno in (errno.ENOENT, errno.EISDIR):
-                return False
-            log.debug('Standard error: {0}'.format(e.sterror))
-            log.error('Failed to load configuration file.',
-                      abort=True)
 
-    def from_env(self, variable_name, silent=False):
+                if isinstance(config_data, str):
+                    log.abort('Config file {0} formatted incorrectly.'.format(
+                        _cfg_file))
+                elif config_data is None:
+                    log.warning('Config file {0} is empty.'.format(_cfg_file))
+                else:
+                    for key, value in config_data.items():
+                        self[key] = value
+        except yaml.YAMLError as e:
+            if self._verbose:
+                log.debug('Standard error: {0}'.format(e))
+            log.abort('Error in config {0}.'.format(_cfg_file))
+
+    def from_env(self, var):
+        """Load configuration settings from environment variable.
+
+        :param var: variable name in dict syntax
+        :type var: str
         """
-        import the config data from an env variable set as a dictionary
-        :param variable_name: name of the env_var
-        :type variable_name: str
-        :param silent: silent errors or not
-        :type silent: Boolean
-        :return:
-        """
-        ev = os.environ.get(variable_name)
-        if not ev:
-            if silent:
-                return False
-            log.error('The environment variable {0} is not defined.'.
-                      format(variable_name), abort=True)
-        config_data = ast.literal_eval(ev)
-        for key in config_data:
-            self[key] = config_data[key]
+        try:
+            for key, value in ast.literal_eval(os.environ[var]).items():
+                self[key] = value
+        except KeyError:
+            if self._verbose:
+                log.warning('Config environment variable is undefined.')
+        except SyntaxError:
+            log.abort('The syntax of the environment variable content '
+                      'is not valid. Check its content.')
 
 
 def get_class_methods(cls):
@@ -117,11 +121,120 @@ def get_class_methods(cls):
     :rtype: list
     """
     methods = list()
+
     for key, value in cls.__dict__.items():
         if not isinstance(value, FunctionType):
             continue
-        if key == "__init__":
+        if key.startswith('_'):
             continue
         methods.append(key)
     methods.sort()
     return methods
+
+
+def get_client_api_pointer():
+    """Return the client api pointer.
+
+    :return: MIQ client api pointer
+    :rtype: object
+    """
+    try:
+        return click.get_current_context().find_root().client_api
+    except AttributeError:
+        log.error('Unable to get client api pointer.')
+
+
+def is_default_config_used():
+    """Is the default configuration used?
+
+    :return: True - defaults used, False - defaults not used
+    :rtype: bool
+    """
+    status = True
+
+    # get parent context
+    ctx = click.get_current_context().find_root()
+
+    # compare default config settings with final parameters
+    for key, value in ctx.default_map.items():
+        if value == ctx.params[key]:
+            # option values match
+            continue
+        else:
+            # option values differ
+            status = False
+            break
+    return status
+
+
+def get_collection_class(ctx, name):
+    """Return the collection's class from a module lookup.
+
+    :param ctx: Click context
+    :type ctx: Namespace
+    :param name: Collection name
+    :type name: str
+    :return: Collection class reference
+    :rtype: class
+    """
+    try:
+        return getattr(import_module(COLLECTIONS_PACKAGE + '.' + name),
+                       'Collections')
+    except ImportError:
+        _abort_invalid_commands(ctx, name)
+
+
+def display_commands(ctx):
+    """Displays the available cli commands.
+
+    :param ctx: Click context
+    :type ctx: Namespace
+    """
+    # create clicks formatter object
+    formatter = ctx.make_formatter()
+
+    # call clicks method to get and format all available commands
+    ctx.command.format_options(ctx, formatter)
+
+    # discard options only leaving commands
+    commands = formatter.getvalue().rstrip('\n').split('Commands:')[1]
+
+    print('Commands:\n {0}'.format(commands))
+
+
+def _abort_invalid_commands(ctx, name):
+    """Abort the CLI when an invalid command is supplied.
+
+    :param ctx: Click context
+    :type ctx: Namespace
+    :param name: Command name
+    :type name: str
+    """
+    display_commands(ctx)
+    log.abort('Command "{0}" is invalid. Please choose a valid command '
+              'from the list above.'.format(name))
+
+
+def get_input_data(payload, payload_file):
+    """
+    helper function to get payload data from a string or json file.
+    :param payload: str representation of json payload data
+    :param payload_file: json file
+    :return:
+    """
+    if payload:
+        try:
+            return ast.literal_eval(payload)
+        except SyntaxError as e:
+            log.abort(e)
+    elif payload_file:
+        if os.path.isfile(payload_file):
+            with open(payload_file) as f:
+                try:
+                    return json.load(f)
+                except ValueError as e:
+                    log.abort(e)
+        else:
+            log.abort("File: {0} not found.".format(payload_file))
+    else:
+        log.abort("Please set the payload or payload_file")
