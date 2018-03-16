@@ -1,6 +1,9 @@
 #
 # Description: Obtain Floating IP/IPS for given
 #      Tenant and External network.
+# Cloud provider              Either by name or ID
+# cloud_provider   (string)   AWS - PIT
+# cloud_provider_id (integer) 2017000000000002
 # Cloud tenant                Either by name or ID
 # cloud_tenant     (string)   pit-jenkins
 # cloud_tenent_id  (integer)  2017000000000001
@@ -53,7 +56,10 @@ begin
       ips = $evm.vmdb(:floating_ip).where(["cloud_network_id = ? and
                                       cloud_tenant_id = ?",
                                       $evm.object['cloud_network_id'],
-                                      $evm.object['cloud_tenant_id']]) if $evm.object['cloud_tenant_id'] && $evm.object['cloud_network_id']
+                                      $evm.object['cloud_tenant_id']]) if $evm.object['cloud_tenant_id'] &&
+                                                                          $evm.object['cloud_network_id'] &&
+                                                                          not $evm.object['cloud_tenant_id'].nil? &&
+                                                                          not $evm.object['cloud_network_id'].nil?
 
       ips = $evm.vmdb(:floating_ip).where(["cloud_network_id = ?",  
                                       $evm.object['cloud_network_id']]) if $evm.object['cloud_tenant_id'].nil? && $evm.object['cloud_network_id']
