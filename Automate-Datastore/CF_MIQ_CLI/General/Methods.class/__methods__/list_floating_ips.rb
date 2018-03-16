@@ -85,7 +85,7 @@ begin
   log(:info, "Floating IPS #{ips}")
 
   ip_list = {}
-  ips.each { |f| ip_list[f.name] = { :id => f.id,
+  ips.each { |f| ip_list[f.address] = { :id => f.id,
                                      :fixed_ip_address => f.fixed_ip_address,
                                      :network_provider => f.ext_management_system,
                                      :ext_floating_network => $evm.vmdb(:cloud_network).find_by_id(f.cloud_network_id).name,
