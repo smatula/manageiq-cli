@@ -53,37 +53,46 @@ begin
     ips = $evm.vmdb(:floating_ip).where(["id = ?", $evm.object['fip_id']])
   else
     if $evm.object['fip'].nil?
+      ips = $evm.vmdb(:floating_ip).all if $evm.object['cloud_tenant_id'].nil? && $evm.object['cloud_network_id'].nil?
+
+      ips = $evm.vmdb(:floating_ip).where(["cloud_network_id = ?",  
+                                      $evm.object['cloud_network_id']]) if $evm.object['cloud_tenant_id'].nil? &&
+                                                                           !$evm.object['cloud_network_id'].nil? &&
+                                                                           $evm.object['cloud_network_id']
+
+      ips = $evm.vmdb(:floating_ip).where(["cloud_tenant_id = ?",  
+                                      $evm.object['cloud_tenant_id']]) if $evm.object['cloud_tenant_id'] &&
+                                                                          !$evm.object['cloud_tenant_id'].nil? &&
+                                                                          $evm.object['cloud_network_id'].nil?
+
       ips = $evm.vmdb(:floating_ip).where(["cloud_network_id = ? and
                                       cloud_tenant_id = ?",
                                       $evm.object['cloud_network_id'],
                                       $evm.object['cloud_tenant_id']]) if $evm.object['cloud_tenant_id'] &&
+                                                                          !$evm.object['cloud_tenant_id'].nil? &&
                                                                           $evm.object['cloud_network_id'] &&
-                                                                          not $evm.object['cloud_tenant_id'].nil? &&
-                                                                          not $evm.object['cloud_network_id'].nil?
-
-      ips = $evm.vmdb(:floating_ip).where(["cloud_network_id = ?",  
-                                      $evm.object['cloud_network_id']]) if $evm.object['cloud_tenant_id'].nil? && $evm.object['cloud_network_id']
-
-      ips = $evm.vmdb(:floating_ip).where(["cloud_tenant_id = ?",  
-                                      $evm.object['cloud_tenant_id']]) if $evm.object['cloud_tenant_id'] && $evm.object['cloud_network_id'].nil?
-
-      ips = $evm.vmdb(:floating_ip).all if $evm.object['cloud_tenant_id'].nil? && $evm.object['cloud_network_id'].nil?
+                                                                          !$evm.object['cloud_network_id'].nil?
     else
       ips = $evm.vmdb(:floating_ip).where(["cloud_network_id = ? and
                                       cloud_tenant_id = ? and 
                                       address = ?",
                                       $evm.object['cloud_network_id'],
                                       $evm.object['cloud_tenant_id'],
-                                      $evm.object['fip']]) if $evm.object['cloud_tenant_id'] && $evm.object['cloud_network_id']
+                                      $evm.object['fip']]) if $evm.object['cloud_tenant_id'] && $evm.object['cloud_network_id'] &&
+                                                              !$evm.object['cloud_tenant_id'].nil? !&& $evm.object['cloud_network_id'].nil?
 
       ips = $evm.vmdb(:floating_ip).where(["cloud_network_id = ? and
                                       address = ?",
                                       $evm.object['cloud_network_id'],
-                                      $evm.object['fip']]) if $evm.object['cloud_tenant_id'].nil? && $evm.object['cloud_network_id']
+                                      $evm.object['fip']]) if $evm.object['cloud_tenant_id'].nil? &&
+                                                              $evm.object['cloud_network_id'] &&
+                                                              !$evm.object['cloud_network_id'].nil?
       ips = $evm.vmdb(:floating_ip).where(["cloud_tenant_id = ? and
                                       address = ?",
                                       $evm.object['cloud_tenant_id'],
-                                      $evm.object['fip']]) if $evm.object['cloud_tenant_id'] && $evm.object['cloud_network_id'].nil?
+                                      $evm.object['fip']]) if $evm.object['cloud_tenant_id'] &&
+                                                              !$evm.object'cloud_tenant_id'].nil? &&
+                                                              $evm.object['cloud_network_id'].nil?
       ips = $evm.vmdb(:floating_ip).where(["address = ?", $evm.object['fip']]) if $evm.object['cloud_tenant_id'].nil? && $evm.object['cloud_network_id'].nil? 
     end
   end
