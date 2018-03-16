@@ -79,7 +79,7 @@ begin
                                       $evm.object['cloud_network_id'],
                                       $evm.object['cloud_tenant_id'],
                                       $evm.object['fip']]) if $evm.object['cloud_tenant_id'] && $evm.object['cloud_network_id'] &&
-                                                              !$evm.object['cloud_tenant_id'].nil? !&& $evm.object['cloud_network_id'].nil?
+                                                              !$evm.object['cloud_tenant_id'].nil? && !$evm.object['cloud_network_id'].nil?
 
       ips = $evm.vmdb(:floating_ip).where(["cloud_network_id = ? and
                                       address = ?",
@@ -91,7 +91,7 @@ begin
                                       address = ?",
                                       $evm.object['cloud_tenant_id'],
                                       $evm.object['fip']]) if $evm.object['cloud_tenant_id'] &&
-                                                              !$evm.object'cloud_tenant_id'].nil? &&
+                                                              !$evm.object['cloud_tenant_id'].nil? &&
                                                               $evm.object['cloud_network_id'].nil?
       ips = $evm.vmdb(:floating_ip).where(["address = ?", $evm.object['fip']]) if $evm.object['cloud_tenant_id'].nil? && $evm.object['cloud_network_id'].nil? 
     end
