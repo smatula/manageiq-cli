@@ -87,9 +87,9 @@ begin
   ip_list = {}
   ips.each { |f| ip_list[f.address] = { :id => f.id,
                                      :fixed_ip_address => f.fixed_ip_address,
-                                     :network_provider => f.ext_management_system
-                                     #:ext_floating_network => $evm.vmdb(:cloud_network).find_by_id(f.cloud_network_id).name
-                                     #:instance => f.vm_id.nil?? "" : $evm.vmdb(:vm).find_by_id(f.vm_id).name
+                                     :network_provider => f.ext_management_system,
+                                     :ext_floating_network => f.cloud_network_id.nil?? "" : $evm.vmdb(:cloud_network).find_by_id(f.cloud_network_id).name,
+                                     :instance => f.vm_id.nil?? "" : $evm.vmdb(:vm).find_by_id(f.vm_id).name
                                    }} if ips
 
   # For automation_task set return data. status and return data
