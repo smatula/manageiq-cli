@@ -6,6 +6,7 @@
 
 begin
 
+  # Logger
   def log(level, msg)
     $evm.log(level, "#{msg}")
   end 
@@ -23,7 +24,8 @@ begin
     log(:info, "")
   end
 
-  def get_fog_object(ext_mgt_system, type="Compute", tenant="admin", encrypted=false, auth_token=nil, verify_peer=false)
+  def get_fog_object(ext_mgt_system, type="Compute", tenant="admin",
+                     encrypted=false, auth_token=nil, verify_peer=false)
     proto = "https"
     proto = "http" if encrypted == false
     require 'fog/openstack'
@@ -34,13 +36,16 @@ begin
         :openstack_username => ext_mgt_system.authentication_userid,
         :openstack_auth_url => "#{proto}://#{ext_mgt_system.hostname}:#{ext_mgt_system.port}/v2.0/tokens",
         #:openstack_auth_token => auth_token,
-        :connection_options => { :ssl_verify_peer => verify_peer, :ssl_version => :TLSv1 },
+        :connection_options => { :ssl_verify_peer => verify_peer,
+                                 :ssl_version => :TLSv1 },
         :openstack_tenant => tenant
         })
     rescue Excon::Errors::SocketError => sockerr
       raise unless sockerr.message.include?("end of file reached (EOFError)")
-      log(:error, "Looks like potentially an ssl connection due to error: #{sockerr}")
-      return get_fog_object(ext_mgt_system, type, tenant, true, auth_token, verify_peer)
+      log(:error,
+          "Looks like potentially an ssl connection due to error: #{sockerr}")
+      return get_fog_object(ext_mgt_system, type, tenant, true,
+                            auth_token, verify_peer)
     rescue => loginerr
       log(:error, "Error logging [#{ext_mgt_system}, #{type}, #{tenant}, #{auth_token rescue "NO TOKEN"}]")
       log_err(loginerr)
@@ -49,20 +54,101 @@ begin
     return nil
   end  
 
-  log(:info, "Begin Automate Method")
+  log(:info, "Begin Automate Method Retire Floating IP ")
   vm = nil
-  
+
+  # Validate parameters  
+  # Check for VM input
   if $evm.object['vm_name'] and $evm.object['vm_id']
     raise ArgumentError, 'To many VM arguments given - Specify VM by Name or ID, not both'  
   end
   
+  # Check for Cloud Network input
+  if $evm.object['cloud_network'] and $evm.object['cloud_network_id']
+    raise ArgumentError, 'To many Extenal Cloud Network arguments given - Specify External Cloud Network by Name or ID, not both'
+  end
+
+  # Check for Tenant input
+  if $evm.object['cloud_tenant'] and $evm.object['cloud_tenant_id']
+    raise ArgumentError, 'To many Cloud Tenant arguments given - Specify Tenant by Name or ID, not both'
+  end
+ 
+  # Check for VM Input - Required
   if ($evm.object['vm_id'].nil? or $evm.object['vm_id'].blank?) and
      ($evm.object['vm_name'].nil? or $evm.object['vm_name'].blank?)
     raise ArgumentError, 'No VM input argument supplied.'
   end
 
+  # Get VM by ID. 
   vm = $evm.vmdb(:vm).find_by_id($evm.object['vm_id']) if $evm.object['vm_id']
-  vm = $evm.vmdb(:vm).find_by_name($evm.object['vm_name']) if $evm.object['vm_name']
+
+  # Get VM by Name and other args supplied by ID's 
+  # Names are not unique so may have more than one.
+  vm_list = $evm.vmdb(:vm).where(["name = ? and cloud_network_id = ? and
+                                 cloud_tenant_id = ?", $evm.object['vm_name'],
+                                 $evm.object['cloud_network_id'],
+                                 $evm.object['cloud_tenant_id']]
+                                ) if $evm.object['vm_name'] &&
+                                     $evm.object['cloud_network_id'] &&
+                                     $evm.object['cloud_tenant_id']
+
+  vm_list = $evm.vmdb(:vm).where(["name = ? and cloud_network_id = ?",
+                                 $evm.object['vm_name'],
+                                 $evm.object['cloud_network_id']]
+                                ) if $evm.object['vm_name'] &&
+                                     $evm.object['cloud_network_id'] &&
+                                     $evm.object['cloud_tenant_id'].nil?
+
+  vm_list = $evm.vmdb(:vm).where(["name = ? and cloud_tenant_id = ?",
+                                 $evm.object['vm_name'],
+                                 $evm.object['cloud_tenant_id']]
+                                ) if $evm.object['vm_name'] &&
+                                     $evm.object['cloud_network_id'].nil? &&
+                                     $evm.object['cloud_tenant_id']
+
+  vm_list = $evm.vmdb(:vm).where(["name = ?", $evm.object['vm_name']]
+                                ) if $evm.object['vm_name'] &&
+                                     $evm.object['cloud_network_id'].nil? &&
+                                     $evm.object['cloud_tenant_id'].nil?
+
+  log(:info, "vm_list: #{vm_list.inspect}")
+
+  # Get VM by Name and othe args supplied by Name
+  # Names are not unique so may have more than one.
+  vms = []
+  if vm_list && vm_list.length > 1 && ($evm.object['cloud_network'] ||
+                                       $evm.object['cloud_tenant'])
+    vm_list.each { |f| $evm.vmdb(:cloud_network).find_by_name(
+                     $evm.object['cloud_network']).vms.each {
+                         |g| vms << g if g.id == f.id and
+                         f.cloud_tenant_id and
+                         $evm.object['cloud_tenant'].equal?($evm.vmdb(
+                         :cloud_tenant).find_by_id(f.cloud_tenant_id).name)
+                     }
+                 } if $evm.object['cloud_network'] && $evm.object['cloud_tenant']
+
+    vm_list.each { |f| $evm.vmdb(:cloud_network).find_by_name(
+                     $evm.object['cloud_network']).vms.each {
+                         |g| vms << g if g.id == f.id
+                     } if f.cloud_tenant_id } if $evm.object['cloud_network'] &&
+                          $evm.object['cloud_tenant'].nil?
+
+    vm_list.each { |f| vms << f if f.cloud_tenant_id and
+                     $evm.object['cloud_tenant'] == 
+                     $evm.vmdb(:cloud_tenant).find_by_id(f.cloud_tenant_id).name
+                 } if $evm.object['cloud_network'].nil? &&
+                      $evm.object['cloud_tenant']
+
+    log(:info, "vms: #{vms.inspect}")
+    vm_list = vms
+  end
+
+  log(:info, "vm_list: #{vm_list.inspect}")
+  if vm_list &&  vm_list.length > 1 
+    raise "ERROR: Multiple Instances with name #{$evm.object['vm_name']} - Provide external network and/or tenant to narrow selection"
+  else
+    vm = vm_list[0]
+  end
 
   raise 'VM Instance not found' if vm == nil
   
