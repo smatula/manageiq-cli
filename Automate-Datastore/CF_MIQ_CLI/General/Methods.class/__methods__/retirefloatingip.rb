@@ -146,7 +146,7 @@ begin
   log(:info, "vm_list: #{vm_list.inspect}")
   if vm_list &&  vm_list.length > 1 
     raise "ERROR: Multiple Instances with name #{$evm.object['vm_name']} - Provide external network and/or tenant to narrow selection"
-  else
+  else if vm_list
     vm = vm_list[0]
   end
 
