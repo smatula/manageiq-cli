@@ -1,7 +1,10 @@
 # Description: Retire all floating IP addresses from this machine.
 # Input - VM (required) - Either by Name or ID
-#         vm_name (string)   =   vm/instance name
-#         vm_id  (integer)   =   vm/instance id
+#         vm_name           (string)  =  vm/instance name
+#         vm_id             (integer) =  vm/instance id
+#         Cloud provider (optional) - Either by name or ID
+#         cloud_provider    (string)  =  provider name
+#         cloud_provider_id (integer) =  provider id 
 #
 
 begin
@@ -62,6 +65,11 @@ begin
   if $evm.object['vm_name'] and $evm.object['vm_id']
     raise ArgumentError, 'To many VM arguments given - Specify VM by Name or ID, not both'  
   end
+
+  # Check for Cloud Provider input
+  if $evm.object['cloud_provider'] and $evm.object['cloud_provider_id']
+      raise ArgumentError, 'To many Cloud Provider arguments given - Specify Cloud Provider by Name or ID, not both'
+  end
   
   # Check for Cloud Network input
   if $evm.object['cloud_network'] and $evm.object['cloud_network_id']
@@ -79,11 +87,17 @@ begin
     raise ArgumentError, 'No VM input argument supplied.'
   end
 
+  # Get EMS ID
+  ems_id = $evm.object['cloud_provider_id'] if $evm.object['cloud_provider_id']
+  ems_id = $evm.vmdb(:external_management_system).find_by_name($evm.object['cloud_provider']).id if $evm.object['cloud_provider']
+  log(:info, "Provider emd_id: #{ems_id}")
+
   # Get VM by ID. 
   vm = $evm.vmdb(:vm).find_by_id($evm.object['vm_id']) if $evm.object['vm_id']
 
   # Get VM by Name and other args supplied by ID's 
   # Names are not unique so may have more than one.
+  vm_list = []
   vm_list = $evm.vmdb(:vm).where(["name = ? and cloud_network_id = ? and
                                  cloud_tenant_id = ?", $evm.object['vm_name'],
                                  $evm.object['cloud_network_id'],
