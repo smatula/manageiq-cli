@@ -87,9 +87,10 @@ begin
     raise ArgumentError, 'No VM input argument supplied.'
   end
 
+  dump_root
   # Get EMS ID
   ems_id = $evm.object['cloud_provider_id'] if $evm.object['cloud_provider_id']
-  ems_id = $evm.vmdb(:external_management_system).find_by_name($evm.object['cloud_provider']).id if $evm.object['cloud_provider']
+  ems_id = $evm.root(:external_management_system).find_by_name($evm.object['cloud_provider']).id if $evm.object['cloud_provider']
   log(:info, "Provider emd_id: #{ems_id}")
 
   # Get VM by ID. 
