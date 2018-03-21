@@ -95,7 +95,7 @@ begin
   # Get VM by ID. 
   vm = $evm.vmdb(:vm).find_by_id($evm.object['vm_id']) if $evm.object['vm_id']
 
-  # Get VM by name
+  # Get VM by name and other args given by ID
   vm_list = []
   cond_list = []
   where_str = ""
@@ -103,43 +103,24 @@ begin
     # Build Where string
     where_str, cond_list = "name = ?", cond_list.push($evm.object['vm_name'])
     where_str, cond_list = where_str + " and ems_id = ?", cond_list.push(ems_id) if ems_id
-    where_str, cond_list = where_str + " and cloud_network_id = ?", cond_list.push($evm.object['cloud_network_id']) if $evm.object['cloud_network_id']
     where_str, cond_list = where_str + " and cloud_tenant_id = ?", cond_list.push($evm.object['cloud_tenant_id']) if $evm.object['cloud_tenant_id']
+
     cond_list.insert(0, where_str)
     vm_list = $evm.vmdb(:vm).where(cond_list)
+
     log(:info, "cond_list: #{cond_list.inspect}")
     log(:info, "vm_list: #{vm_list.inspect}")
+
+    # Handle cloud network
+    if $evm.object['cloud_network_id']
+      vms = []
+      vm_list.each { |f| $evm.vmdb(:cloud_network).find_by_id(
+                     $evm.object['cloud_network_id']).vms.each {
+                         |g| vms << g if g.id == f.id
+                     }}
+      vm_list = vms
+    end
   end
-
-  ## Get VM by Name and other args supplied by ID's 
-  ## Names are not unique so may have more than one.
-  vm_list = []
-  vm_list = $evm.vmdb(:vm).where(["name = ? and cloud_network_id = ? and
-                                 cloud_tenant_id = ?", $evm.object['vm_name'],
-                                 $evm.object['cloud_network_id'],
-                                 $evm.object['cloud_tenant_id']]
-                                ) if $evm.object['vm_name'] &&
-                                     $evm.object['cloud_network_id'] &&
-                                     $evm.object['cloud_tenant_id']
-
-  vm_list = $evm.vmdb(:vm).where(["name = ? and cloud_network_id = ?",
-                                 $evm.object['vm_name'],
-                                 $evm.object['cloud_network_id']]
-                                ) if $evm.object['vm_name'] &&
-                                     $evm.object['cloud_network_id'] &&
-                                     $evm.object['cloud_tenant_id'].nil?
-
-  vm_list = $evm.vmdb(:vm).where(["name = ? and cloud_tenant_id = ?",
-                                 $evm.object['vm_name'],
-                                 $evm.object['cloud_tenant_id']]
-                                ) if $evm.object['vm_name'] &&
-                                     $evm.object['cloud_network_id'].nil? &&
-                                     $evm.object['cloud_tenant_id']
-
-  vm_list = $evm.vmdb(:vm).where(["name = ?", $evm.object['vm_name']]
-                                ) if $evm.object['vm_name'] &&
-                                     $evm.object['cloud_network_id'].nil? &&
-                                     $evm.object['cloud_tenant_id'].nil?
 
   log(:info, "vm_list: #{vm_list.inspect}")
 
@@ -160,7 +141,7 @@ begin
     vm_list.each { |f| $evm.vmdb(:cloud_network).find_by_name(
                      $evm.object['cloud_network']).vms.each {
                          |g| vms << g if g.id == f.id
-                     } if f.cloud_tenant_id } if $evm.object['cloud_network'] &&
+                     }} if $evm.object['cloud_network'] &&
                           $evm.object['cloud_tenant'].nil?
 
     vm_list.each { |f| vms << f if f.cloud_tenant_id and
@@ -240,6 +221,7 @@ begin
   end
 
   vm.custom_set("NEUTRON_floating_id", nil)
+  vm.custom_set("NEUTRON_floating_ip", nil)
   vm.refresh
   
   if res_retire_success == false
