@@ -100,18 +100,13 @@ begin
   cond_list = []
   if $evm.object['vm_name']
     # Build Where string
-    where_str, cond_list = "name = ?", cond_list.append($evm.object['vm_name'])
-    if ems_id
-      where_str, cond_list = where_str + " and ems_id = ?", cond_list.append(ems_id)
-    end
-    if $evm.object['cloud_network_id']
-      where_str, cond_list = where_str + " and cloud_network_id = ?", cond_list.append($evm.object['cloud_network_id'])
-    end
-    if $evm.object['cloud_tenant_id']
-      where_str, cond_list = where_str + " and cloud_tenant_id = ?", cond_list.append($evm.object['cloud_tenant_id'])
-    end
+    where_str, cond_list = "name = ?", cond_list.push($evm.object['vm_name'])
+    where_str, cond_list = where_str + " and ems_id = ?", cond_list.push(ems_id) if ems_id
+    where_str, cond_list = where_str + " and cloud_network_id = ?", cond_list.push($evm.object['cloud_network_id']) if $evm.object['cloud_network_id']
+    where_str, cond_list = where_str + " and cloud_tenant_id = ?", cond_list.push($evm.object['cloud_tenant_id']) if $evm.object['cloud_tenant_id']
+    cond_list.insert(0, where_str)
     vm_list = []
-    vm_list = $evm.vmdb(:vm).where([where_str, $evm.object['vm_name'], ems_id])
+    vm_list = $evm.vmdb(:vm).where(cond_list)
     log(:info, "vm_list: #{vm_list.inspect}")
   end
 
@@ -245,7 +240,6 @@ begin
   end
 
   vm.custom_set("NEUTRON_floating_id", nil)
-  vm.custom_set("NEUTRON_floating_ip", nil)
   vm.refresh
   
   if res_retire_success == false
