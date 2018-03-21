@@ -109,7 +109,7 @@ begin
     cond_list.insert(0, where_str)
     vm_list = $evm.vmdb(:vm).where(cond_list)
     vm_list1 = $evm.vmdb(:vm).where([where_str, $evm.object['vm_name'], $evm.object['cloud_network_id']])
-    vm_list2 = $evm.vmdb(:vm).where([where_str, fin_cond])
+    vm_list2 = $evm.vmdb(:vm).where([where_str, "sjm_osp_miq_test_machine_9", "2"])
     vm_list3 = $evm.vmdb(:vm).where(["name = ? and cloud_network_id = ?", $evm.object['vm_name'], $evm.object['cloud_network_id']])
     log(:info, "cond_list: #{cond_list.inspect}")
     log(:info, "vm_list: #{vm_list.inspect}")
