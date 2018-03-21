@@ -100,10 +100,10 @@ begin
   if $evm.object['vm_name']
     # Build Where string
     where_str = "name = " + $evm.object['vm_name']
-    where_str = where_str + " and ems_id = " + ems_id if ems_id
-    where_str = where_str + " and cloud_network_id = " + $evm.object['cloud_network_id'] if $evm.object['cloud_network_id']
-    where_str = where_str + " and cloud_tenant_id = " + $evm.object['cloud_tenant_id'] if $evm.object['cloud_tenant_id']
-    where_str = where_str + " and cloud_network_id = " + $evm.object['cloud_network_id'] if $evm.object['cloud_network_id']
+    where_str = where_str + " and ems_id = #{ems_id}" if ems_id
+    where_str = where_str + " and cloud_network_id = #{$evm.object['cloud_network_id']}" if $evm.object['cloud_network_id']
+    where_str = where_str + " and cloud_tenant_id = #{$evm.object['cloud_tenant_id']}" if $evm.object['cloud_tenant_id']
+    where_str = where_str + " and cloud_network_id = #{$evm.object['cloud_network_id']}" if $evm.object['cloud_network_id']
 
     vm_list = []
     vm_list = $evm.vmdb(:vm).where([where_str])
