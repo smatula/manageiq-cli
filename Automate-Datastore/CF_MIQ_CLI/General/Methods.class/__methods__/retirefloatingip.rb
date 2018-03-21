@@ -96,7 +96,7 @@ begin
   vm = $evm.vmdb(:vm).find_by_id($evm.object['vm_id']) if $evm.object['vm_id']
 
   # Get VM by name
-  where_str = None
+  where_str = ""
   if $evm.object['vm_name']
     # Build Where string
     where_str = "name = " + $evm.object['vm_name']
