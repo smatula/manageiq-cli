@@ -107,6 +107,7 @@ begin
     where_str, cond_list = where_str + " and cloud_tenant_id = ?", cond_list.push($evm.object['cloud_tenant_id']) if $evm.object['cloud_tenant_id']
     cond_list.insert(0, where_str)
     vm_list = $evm.vmdb(:vm).where(cond_list)
+    log(:info, "cond_list: #{cond_list.inspect}")
     log(:info, "vm_list: #{vm_list.inspect}")
   end
 
