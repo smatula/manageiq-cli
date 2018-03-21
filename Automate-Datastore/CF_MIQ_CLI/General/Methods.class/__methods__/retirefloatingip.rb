@@ -97,58 +97,51 @@ begin
 
   # Get VM by name
   vm_list = []
-  where_str = ""
   cond_list = []
+  where_str = ""
   if $evm.object['vm_name']
     # Build Where string
     where_str, cond_list = "name = ?", cond_list.push($evm.object['vm_name'])
     where_str, cond_list = where_str + " and ems_id = ?", cond_list.push(ems_id) if ems_id
     where_str, cond_list = where_str + " and cloud_network_id = ?", cond_list.push($evm.object['cloud_network_id']) if $evm.object['cloud_network_id']
     where_str, cond_list = where_str + " and cloud_tenant_id = ?", cond_list.push($evm.object['cloud_tenant_id']) if $evm.object['cloud_tenant_id']
-    fin_cond = cond_list
     cond_list.insert(0, where_str)
-    #vm_list = $evm.vmdb(:vm).where(cond_list)
-    #vm_list1 = $evm.vmdb(:vm).where([where_str, $evm.object['vm_name'], $evm.object['cloud_network_id']])
-    #vm_list2 = $evm.vmdb(:vm).where([where_str, "sjm_osp_miq_test_machine_9", "2"])
-    vm_list3 = $evm.vmdb(:vm).where(["name = ? and cloud_network_id = ?", $evm.object['vm_name'], $evm.object['cloud_network_id']])
-    #log(:info, "cond_list: #{cond_list.inspect}")
-    #log(:info, "vm_list: #{vm_list.inspect}")
-    #log(:info, "vm_list1: #{vm_list1.inspect}")
-    #log(:info, "vm_list2: #{vm_list2.inspect}")
-    log(:info, "vm_list3: #{vm_list3.inspect}")
+    vm_list = $evm.vmdb(:vm).where(cond_list)
+    log(:info, "cond_list: #{cond_list.inspect}")
+    log(:info, "vm_list: #{vm_list.inspect}")
   end
 
   ## Get VM by Name and other args supplied by ID's 
   ## Names are not unique so may have more than one.
-  vm_list4 = []
-  #vm_list = $evm.vmdb(:vm).where(["name = ? and cloud_network_id = ? and
-  #                               cloud_tenant_id = ?", $evm.object['vm_name'],
-  #                               $evm.object['cloud_network_id'],
-  #                               $evm.object['cloud_tenant_id']]
-  #                              ) if $evm.object['vm_name'] &&
-  #                                   $evm.object['cloud_network_id'] &&
-  #                                   $evm.object['cloud_tenant_id']
+  vm_list = []
+  vm_list = $evm.vmdb(:vm).where(["name = ? and cloud_network_id = ? and
+                                 cloud_tenant_id = ?", $evm.object['vm_name'],
+                                 $evm.object['cloud_network_id'],
+                                 $evm.object['cloud_tenant_id']]
+                                ) if $evm.object['vm_name'] &&
+                                     $evm.object['cloud_network_id'] &&
+                                     $evm.object['cloud_tenant_id']
 
-  vm_list4 = $evm.vmdb(:vm).where(["name = ? and cloud_network_id = ?",
+  vm_list = $evm.vmdb(:vm).where(["name = ? and cloud_network_id = ?",
                                  $evm.object['vm_name'],
                                  $evm.object['cloud_network_id']]
                                 ) if $evm.object['vm_name'] &&
                                      $evm.object['cloud_network_id'] &&
                                      $evm.object['cloud_tenant_id'].nil?
 
-  #vm_list = $evm.vmdb(:vm).where(["name = ? and cloud_tenant_id = ?",
-  #                               $evm.object['vm_name'],
-  #                               $evm.object['cloud_tenant_id']]
-  #                              ) if $evm.object['vm_name'] &&
-  #                                   $evm.object['cloud_network_id'].nil? &&
-  #                                   $evm.object['cloud_tenant_id']
+  vm_list = $evm.vmdb(:vm).where(["name = ? and cloud_tenant_id = ?",
+                                 $evm.object['vm_name'],
+                                 $evm.object['cloud_tenant_id']]
+                                ) if $evm.object['vm_name'] &&
+                                     $evm.object['cloud_network_id'].nil? &&
+                                     $evm.object['cloud_tenant_id']
 
-  #vm_list = $evm.vmdb(:vm).where(["name = ?", $evm.object['vm_name']]
-  #                              ) if $evm.object['vm_name'] &&
-  #                                   $evm.object['cloud_network_id'].nil? &&
-  #                                   $evm.object['cloud_tenant_id'].nil?
+  vm_list = $evm.vmdb(:vm).where(["name = ?", $evm.object['vm_name']]
+                                ) if $evm.object['vm_name'] &&
+                                     $evm.object['cloud_network_id'].nil? &&
+                                     $evm.object['cloud_tenant_id'].nil?
 
-  log(:info, "vm_list4: #{vm_list4.inspect}")
+  log(:info, "vm_list: #{vm_list.inspect}")
 
   # Get VM by Name and othe args supplied by Name
   # Names are not unique so may have more than one.
