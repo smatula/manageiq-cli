@@ -107,14 +107,14 @@ begin
     where_str, cond_list = where_str + " and cloud_tenant_id = ?", cond_list.push($evm.object['cloud_tenant_id']) if $evm.object['cloud_tenant_id']
     fin_cond = cond_list
     cond_list.insert(0, where_str)
-    vm_list = $evm.vmdb(:vm).where(cond_list)
-    vm_list1 = $evm.vmdb(:vm).where([where_str, $evm.object['vm_name'], $evm.object['cloud_network_id']])
-    vm_list2 = $evm.vmdb(:vm).where([where_str, "sjm_osp_miq_test_machine_9", "2"])
+    #vm_list = $evm.vmdb(:vm).where(cond_list)
+    #vm_list1 = $evm.vmdb(:vm).where([where_str, $evm.object['vm_name'], $evm.object['cloud_network_id']])
+    #vm_list2 = $evm.vmdb(:vm).where([where_str, "sjm_osp_miq_test_machine_9", "2"])
     vm_list3 = $evm.vmdb(:vm).where(["name = ? and cloud_network_id = ?", $evm.object['vm_name'], $evm.object['cloud_network_id']])
-    log(:info, "cond_list: #{cond_list.inspect}")
-    log(:info, "vm_list: #{vm_list.inspect}")
-    log(:info, "vm_list1: #{vm_list1.inspect}")
-    log(:info, "vm_list2: #{vm_list2.inspect}")
+    #log(:info, "cond_list: #{cond_list.inspect}")
+    #log(:info, "vm_list: #{vm_list.inspect}")
+    #log(:info, "vm_list1: #{vm_list1.inspect}")
+    #log(:info, "vm_list2: #{vm_list2.inspect}")
     log(:info, "vm_list3: #{vm_list3.inspect}")
   end
 
