@@ -24,8 +24,8 @@ from time import sleep
 # INPUT_SUBNET = "<name_of_cloud_subnet>"
 
 # Required Input Parameters
-INPUT_VM_NAME = None
-INPUT_PROVIDER_NAME = None
+INPUT_VM_NAME = "sjm_aws_miq_test_machine_3"
+INPUT_PROVIDER_NAME = "AWS - Pit"
 
 # Optional Input Parameter
 INPUT_NETWORK = None
