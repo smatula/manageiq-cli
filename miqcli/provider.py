@@ -307,6 +307,15 @@ class Networks(Provider):
         else:
             self.type = self.network_type + '::CloudNetwork'
 
+    def get_id(self, name, tenant_id=None):
+        """Override the parent get_id.
+        :param name: resource name
+        :type name: str
+        :param tenant_id: optional tenant_id for querying
+        :type tenant_id: str"""
+        self.get_resource(name, tenant_id)
+        return getattr(self.query, 'id')
+
 
     def get_id(self, name, tenant_id=None):
         """Override the parent get_id.
