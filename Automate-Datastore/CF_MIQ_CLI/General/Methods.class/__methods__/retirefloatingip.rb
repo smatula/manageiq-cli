@@ -5,7 +5,13 @@
 #         Cloud provider (optional) - Either by name or ID
 #         cloud_provider    (string)  =  provider name
 #         cloud_provider_id (integer) =  provider id 
-#
+#         Coud network   (optional) - Either by name or ID
+#         cloud network     (string)  =  network name
+#         cloud_network_id  (integer) =  network id
+#         cloud tenant   (optional) - Either by name or ID
+#         cloud_tenant      (string)  =  tenant name
+#         cloud_tenant_id   (integer) =  tenant id
+
 
 begin
 

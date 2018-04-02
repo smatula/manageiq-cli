@@ -1,9 +1,6 @@
 #
 # Description: Obtain Floating IP/IPS for given
 #      Tenant and External network.
-# Cloud provider              Either by name or ID
-# cloud_provider   (string)   AWS - PIT
-# cloud_provider_id (integer) 2017000000000002
 # Cloud tenant                Either by name or ID
 # cloud_tenant     (string)   pit-jenkins
 # cloud_tenent_id  (integer)  2017000000000001
@@ -42,8 +39,6 @@ begin
 
   $evm.object['cloud_tenant_id'] = $evm.vmdb(:cloud_tenant).find_by_name($evm.object['cloud_tenant']).id if $evm.object['cloud_tenant_id'].nil? && $evm.object['cloud_tenant']
   $evm.object['cloud_network_id'] = $evm.vmdb(:cloud_network).find_by_name($evm.object['cloud_network']).id if $evm.object['cloud_network_id'].nil? && $evm.object['cloud_network']
-  #$evm.object['cloud_tenant_id'] = $evm.vmdb(:cloud_tenant).where(["name = ?", $evm.object['cloud_tenant']]) if $evm.object['cloud_tenant_id'].nil? && $evm.object['cloud_tenant']
-  #$evm.object['cloud_network_id'] = $evm.vmdb(:cloud_network).where(["name = ?", $evm.object['cloud_network']]) if $evm.object['cloud_network_id'].nil? && $evm.object['cloud_network']
 
   log(:info, "Cloud Network ID: #{$evm.object['cloud_network_id'].inspect}")
   log(:info, "Cloud Network ID: #{$evm.object['cloud_network_id']} - Tenant ID: #{$evm.object['cloud_tenant_id']}")
