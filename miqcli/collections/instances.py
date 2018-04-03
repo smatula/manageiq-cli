@@ -144,7 +144,7 @@ class Collections(CollectionsMixin):
 
                 # return instances that have the attribute passed set
                 if attr:
-                    # scub attr of base attributes
+                    # scrub attr of base attributes
                     opt_lists = self.collection.options()
                     att_list = list(attr)
                     for att in att_list:
