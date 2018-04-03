@@ -28,7 +28,8 @@ class Collections(CollectionsMixin):
     """Virtual machines collections."""
 
     @click.option('--by_id', type=bool, default=False,
-                  help='name given as ID of vm')
+                  help='name given as ID of vm, all other options except '
+                   '--attr and -v are ignored')
     @click.option('--attr', type=str, default='',
                   help='attribute of a vm(s)', multiple=True)
     @click.option('--provider', type=str, default='',
@@ -123,7 +124,7 @@ class Collections(CollectionsMixin):
 
                 # return vms that have the attribute passed set
                 if attr:
-                    # scub attr of base attributes
+                    # scrub attr of base attributes
                     opt_lists = self.collection.options()
                     att_list = list(attr)
                     for att in att_list:
@@ -154,6 +155,11 @@ class Collections(CollectionsMixin):
                             log.info(' * %s: %s' % (k.upper(), v))
                         except AttributeError:
                             log.info(' * %s: ' % k.upper())
+                    if attr:
+                        for a in attr:
+                            if a not in e['_data']:
+                                log.info(' * %s: ' % a.upper())
+
                 else:
                     if attr:
                         for a in attr:
