@@ -175,6 +175,10 @@ class Collections(CollectionsMixin):
                             log.info(' * %s: %s' % (k.upper(), v))
                         except AttributeError:
                             log.info(' * %s: ' % k.upper())
+                    if attr:
+                        for a in attr:
+                            if a not in e['_data']:
+                                log.info(' * %s: ' % a.upper())
                 else:
                     if attr:
                         for a in attr:
